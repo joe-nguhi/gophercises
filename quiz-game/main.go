@@ -25,18 +25,26 @@ var count int
 var flagLimit int
 var flagCSV string
 
+var scanner *bufio.Scanner
+
 func init() {
 	flag.StringVar(&flagCSV, "csv", defaultCSV, "a csv file in the format 'question,answer'")
 	flag.IntVar(&flagLimit, "limit", defaultLimit, "the time limit for the quiz in seconds")
 	flag.Parse()
+
+	scanner = bufio.NewScanner(os.Stdin)
 }
 
 func main() {
 	problems := getProblems(flagCSV)
+
+	fmt.Printf("You have %d seconds to answer %d questions. Good Luck!\n", flagLimit, len(problems))
+	fmt.Println("Press Enter key to start Quiz. Press Enter again to move to the next question.")
+	scanner.Scan()
+	scanner.Text()
+
 	timer := time.After(time.Duration(flagLimit) * time.Second)
-
 	completed := make(chan bool)
-
 	go runQuiz(problems, completed)
 
 	for {
@@ -83,10 +91,8 @@ func getProblems(filepath string) []*Problem {
 }
 
 func runQuiz(problems []*Problem, done chan bool) {
-	scanner := bufio.NewScanner(os.Stdin)
 
 	fmt.Println("Starting Quiz....")
-	fmt.Println("Press Enter key to move to next Quiz Question. Good Luck!")
 
 	for i, problem := range problems {
 		fmt.Printf("%d. %s = ", i+1, problem.Question)
