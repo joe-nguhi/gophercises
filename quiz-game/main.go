@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"encoding/csv"
 	"fmt"
 	"io"
@@ -13,13 +14,28 @@ type Problem struct {
 	Answer   string
 }
 
+var count int
+
 func main() {
 
 	problems := getProblems("problems.csv")
+	scanner := bufio.NewScanner(os.Stdin)
+
+	fmt.Println("Starting Quiz....")
+	fmt.Println("Press Enter key to move to next Quiz Question. Good Luck!")
 
 	for i, problem := range problems {
-		fmt.Printf("%d. %s = %s\n", i+1, problem.Question, problem.Answer)
+		fmt.Printf("%d. %s = ", i+1, problem.Question)
+
+		scanner.Scan()
+		ans := scanner.Text()
+
+		if ans == problem.Answer {
+			count++
+		}
 	}
+
+	fmt.Printf("You scored %d out of %d\n", count, len(problems))
 }
 
 func getProblems(filepath string) []*Problem {
