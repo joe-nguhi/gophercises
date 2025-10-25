@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math/rand"
 	"os"
 	"strings"
 	"time"
@@ -24,12 +25,14 @@ var count int
 
 var flagLimit int
 var flagCSV string
+var flagShuffle bool
 
 var scanner *bufio.Scanner
 
 func init() {
 	flag.StringVar(&flagCSV, "csv", defaultCSV, "a csv file in the format 'question,answer'")
 	flag.IntVar(&flagLimit, "limit", defaultLimit, "the time limit for the quiz in seconds")
+	flag.BoolVar(&flagShuffle, "shuffle", false, "shuffle the questions")
 	flag.Parse()
 
 	scanner = bufio.NewScanner(os.Stdin)
@@ -87,6 +90,10 @@ func getProblems(filepath string) []*Problem {
 		})
 	}
 
+	if flagShuffle {
+		shuffleProblems(problems)
+	}
+
 	return problems
 }
 
@@ -108,4 +115,12 @@ func runQuiz(problems []*Problem, done chan bool) {
 	}
 
 	done <- true
+}
+
+func shuffleProblems(problems []*Problem) {
+	rand.NewSource(time.Now().UnixNano())
+
+	rand.Shuffle(len(problems), func(i, j int) {
+		problems[i], problems[j] = problems[j], problems[i]
+	})
 }
