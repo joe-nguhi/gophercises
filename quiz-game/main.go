@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -93,7 +94,9 @@ func runQuiz(problems []*Problem, done chan bool) {
 		scanner.Scan()
 		ans := scanner.Text()
 
-		if ans == problem.Answer {
+		parsed := strings.ToLower(strings.TrimSpace(ans))
+
+		if parsed == strings.ToLower(problem.Answer) {
 			count++
 		}
 	}
