@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/csv"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -15,13 +16,23 @@ type Problem struct {
 	Answer   string
 }
 
-const quizDuration = 12
+const defaultLimit = 15
+const defaultCSV = "problems.csv"
 
 var count int
 
+var flagLimit int
+var flagCSV string
+
+func init() {
+	flag.StringVar(&flagCSV, "csv", defaultCSV, "a csv file in the format 'question,answer'")
+	flag.IntVar(&flagLimit, "limit", defaultLimit, "the time limit for the quiz in seconds")
+	flag.Parse()
+}
+
 func main() {
-	problems := getProblems("problems.csv")
-	timer := time.After(quizDuration * time.Second)
+	problems := getProblems(flagCSV)
+	timer := time.After(time.Duration(flagLimit) * time.Second)
 
 	completed := make(chan bool)
 
