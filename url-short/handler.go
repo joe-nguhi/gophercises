@@ -2,6 +2,8 @@ package urlshort
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"gopkg.in/yaml.v3"
@@ -22,6 +24,7 @@ func MapHandler(pathsToUrls map[string]string, fallback http.Handler) http.Handl
 	return func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
 		for k, v := range pathsToUrls {
+			fmt.Printf("path: %s, url: %s\n", k, v)
 			if k == path {
 				http.Redirect(w, r, v, http.StatusFound)
 				return
@@ -50,6 +53,17 @@ func MapHandler(pathsToUrls map[string]string, fallback http.Handler) http.Handl
 func YAMLHandler(yml []byte, fallback http.Handler) (http.HandlerFunc, error) {
 	var pathUrls []pathURL
 	d := yaml.NewDecoder(bytes.NewReader(yml))
+	err := d.Decode(&pathUrls)
+	if err != nil {
+		return nil, err
+	}
+	m := buildMap(pathUrls)
+	return MapHandler(m, fallback), nil
+}
+
+func JSONHandler(data []byte, fallback http.Handler) (http.HandlerFunc, error) {
+	var pathUrls []pathURL
+	d := json.NewDecoder(bytes.NewReader(data))
 	err := d.Decode(&pathUrls)
 	if err != nil {
 		return nil, err
