@@ -1,10 +1,20 @@
 package main
 
 import (
+	"fmt"
+	"html/template"
 	"net/http"
 
 	"github.com/joe-nguhi/gophercises/cyoa"
 )
+
+const port = "8080"
+
+var tmpl *template.Template
+
+func init() {
+	tmpl = template.Must(template.ParseFiles("./temp.html"))
+}
 
 func main() {
 
@@ -13,7 +23,8 @@ func main() {
 		panic(err)
 	}
 
-	handler := cyoa.ArchHandler{Story: story}
+	handler := cyoa.ArchHandler{Story: story, Page: tmpl}
 
-	http.ListenAndServe(":8080", handler)
+	fmt.Println("Starting server on port", port)
+	http.ListenAndServe(":"+port, handler)
 }

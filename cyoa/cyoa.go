@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -12,6 +14,7 @@ import (
 
 type ArchHandler struct {
 	Story
+	Page *template.Template
 }
 
 type StoryArc struct {
@@ -31,13 +34,13 @@ func (a ArchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	arc := strings.Replace(path, "/", "", 1)
 
 	if arc == "intro" || arc == "" {
-		printStory(w, a.Story["intro"])
+		a.printStory(w, a.Story["intro"])
+		return
 	}
 
 	for k, v := range a.Story {
-		fmt.Printf("key: %s, url: %s\n", k, arc)
 		if k == arc {
-			printStory(w, v)
+			a.printStory(w, v)
 			return
 		}
 	}
@@ -45,14 +48,17 @@ func (a ArchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "<h1>%s</h1>", "Not Found")
 }
 
-func printStory(w http.ResponseWriter, arc StoryArc) {
-	fmt.Fprintf(w, "<h1>%s</h1>", arc.Title)
-	for _, line := range arc.Story {
-		fmt.Fprintf(w, "<p>%s</p>", line)
+func (a ArchHandler) printStory(w http.ResponseWriter, data StoryArc) {
+
+	check := func(err error) {
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
-	for _, option := range arc.Options {
-		fmt.Fprintf(w, "<div><a href=\"%s\">%s</a></div>", option.Arc, option.Text)
-	}
+
+	err := a.Page.Execute(w, data)
+	check(err)
+
 }
 
 func GetStory(file string) (Story, error) {
