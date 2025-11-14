@@ -2,6 +2,7 @@ package urlshort
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -65,6 +66,30 @@ func JSONHandler(data []byte, fallback http.Handler) (http.HandlerFunc, error) {
 	var pathUrls []pathURL
 	d := json.NewDecoder(bytes.NewReader(data))
 	err := d.Decode(&pathUrls)
+	if err != nil {
+		return nil, err
+	}
+	m := buildMap(pathUrls)
+	return MapHandler(m, fallback), nil
+}
+
+func SQLHandler(db *sql.DB, fallback http.Handler) (http.HandlerFunc, error) {
+	var pathUrls []pathURL
+	rows, err := db.Query("select name, value from paths")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var value string
+		var name string
+		err = rows.Scan(&name, &value)
+		if err != nil {
+			return nil, err
+		}
+		pathUrls = append(pathUrls, pathURL{Path: name, URL: value})
+	}
+	err = rows.Err()
 	if err != nil {
 		return nil, err
 	}

@@ -1,14 +1,19 @@
 package main
 
 import (
+	"database/sql"
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 
 	urlshort "github.com/joe-nguhi/gophercises/url-short"
+	_ "github.com/mattn/go-sqlite3"
 )
+
+const dbName = "./paths.db"
 
 var yamlFlag string
 var jsonFlag string
@@ -20,6 +25,13 @@ func init() {
 }
 
 func main() {
+	db, err := initDB()
+	if err != nil {
+		panic(err)
+	}
+
+	defer db.Close()
+
 	mux := defaultMux()
 
 	// Build the MapHandler using the mux as the fallback
@@ -50,8 +62,14 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	sqlHandler, err := urlshort.SQLHandler(db, jsonHandler)
+	if err != nil {
+		panic(err)
+	}
+
 	fmt.Println("Starting the server on :8080")
-	http.ListenAndServe(":8080", jsonHandler)
+	http.ListenAndServe(":8080", sqlHandler)
 }
 
 func getFileData(file string) ([]byte, error) {
@@ -77,4 +95,40 @@ func defaultMux() *http.ServeMux {
 
 func hello(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Hello, world!")
+}
+
+func initDB() (*sql.DB, error) {
+	os.Remove(dbName)
+
+	db, err := sql.Open("sqlite3", dbName)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create table
+	sqlStmt := `
+	CREATE TABLE IF NOT EXISTS paths (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			name TEXT UNIQUE NOT NULL ,
+			value TEXT NOT NULL
+		);
+	`
+	_, err = db.Exec(sqlStmt)
+	if err != nil {
+		log.Printf("%q: %s\n", err, sqlStmt)
+		return nil, err
+	}
+
+	// Insert Data
+	sqlStmt = `
+		INSERT INTO paths(name, value) 
+		VALUES("/my-portfolio","https://joe-nguhi.netlify.app/"), ("/my-github","https://github.com/joe-nguhi")
+	`
+	_, err = db.Exec(sqlStmt)
+	if err != nil {
+		log.Printf("%q \n", err)
+		return nil, err
+	}
+
+	return db, nil
 }
